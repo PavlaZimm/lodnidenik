@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx shadcn *)",
+      "Bash(npx supabase *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git log *)",
+      "Read(**)",
+      "Write(app/**)",
+      "Write(components/**)",
+      "Write(lib/**)",
+      "Write(supabase/**)",
+      "Write(tasks/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Write(.env)",
+      "Write(.env.local)"
+    ]
+  }
+}

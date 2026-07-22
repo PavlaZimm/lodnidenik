@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Paleta a tokeny podle BRAND_MANUAL.md §9. Dark theme záměrně zatím není. */
+:root {
+    --radius: 0.625rem;
+
+    --background: oklch(0.965 0.013 86.8); /* papír */
+    --foreground: oklch(0.275 0.045 250.9); /* námořní inkoust */
+
+    --card: oklch(0.965 0.013 86.8);
+    --card-foreground: oklch(0.275 0.045 250.9);
+    --popover: oklch(0.965 0.013 86.8);
+    --popover-foreground: oklch(0.275 0.045 250.9);
+
+    --primary: oklch(0.493 0.082 206.2); /* moře / teal */
+    --primary-foreground: oklch(1 0 0); /* bílá — 5,97:1 */
+
+    --secondary: oklch(0.921 0.024 85.8); /* písek */
+    --secondary-foreground: oklch(0.275 0.045 250.9);
+
+    --muted: oklch(0.921 0.024 85.8);
+    --muted-foreground: oklch(0.521 0.024 243.7); /* mlha */
+
+    --accent: oklch(0.921 0.024 85.8); /* hover plochy = písek */
+    --accent-foreground: oklch(0.275 0.045 250.9);
+
+    --destructive: oklch(0.528 0.147 33.6); /* cihla */
+    --destructive-foreground: oklch(1 0 0);
+
+    --success: oklch(0.531 0.095 161.9); /* mořská zeleň */
+    --success-foreground: oklch(1 0 0);
+
+    --brass: oklch(0.62 0.119 74.4); /* mosaz — jen dekorace, ne drobný text */
+
+    --border: oklch(0.86 0.029 84.6); /* lano */
+    --input: oklch(0.86 0.029 84.6);
+    --ring: oklch(0.493 0.082 206.2); /* focus = teal */
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-brass: var(--brass);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --font-display: var(--font-display);
+    --font-heading: var(--font-display);
+    --font-sans: var(--font-body);
+    --font-mono: var(--font-mono);
+
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    html {
+        @apply font-sans;
+    }
+
+    /* BRAND_MANUAL.md §8 — animace jsou doplněk, ne podmínka použitelnosti. */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
