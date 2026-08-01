@@ -16,8 +16,9 @@ import { Timeline } from "@/components/logbook/timeline"
 import { PreTripForm } from "@/components/logbook/pre-trip-form"
 import { AddEntryDialog } from "@/components/logbook/add-entry-dialog"
 import { EditEntryDialog } from "@/components/logbook/edit-entry-dialog"
+import { InstallGuideDialog } from "@/components/logbook/install-guide-dialog"
 import { PhotoLightbox } from "@/components/logbook/photo-lightbox"
-import { Anchor, Compass, Info, CheckCircle2, MapPin, Play, Square, ClipboardCheck } from "lucide-react"
+import { Anchor, Compass, Info, CheckCircle2, MapPin, Play, Square, ClipboardCheck, Smartphone } from "lucide-react"
 
 const BoatMap = dynamic(() => import("@/components/map/boat-map"), {
   ssr: false,
@@ -35,6 +36,7 @@ export default function Home() {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
   const [showPreTripModal, setShowPreTripModal] = useState(false)
   const [showAddEntryModal, setShowAddEntryModal] = useState(false)
+  const [showInstallGuide, setShowInstallGuide] = useState(false)
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
   const [activePhotoUrl, setActivePhotoUrl] = useState<string | null>(null)
   const [manualClickCoords, setManualClickCoords] = useState<{ lat: number; lng: number } | null>(
@@ -191,6 +193,16 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {/* Add to Home Screen Button */}
+        <button
+          onClick={() => setShowInstallGuide(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors"
+        >
+          <Smartphone className="size-4 text-primary" />
+          <span className="hidden sm:inline">Dát na plochu mobilu</span>
+          <span className="sm:hidden">Na plochu</span>
+        </button>
       </header>
 
       {/* GPS Error Alert */}
@@ -201,7 +213,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Dashboard Control Header with Live Run/Sailing HUD */}
+      {/* Dashboard Control Header */}
       <TripHeader
         trips={trips}
         activeTrip={activeTrip}
@@ -336,6 +348,8 @@ export default function Home() {
           onClose={() => setEditingEntry(null)}
         />
       )}
+
+      {showInstallGuide && <InstallGuideDialog onClose={() => setShowInstallGuide(false)} />}
 
       <PhotoLightbox url={activePhotoUrl} onClose={() => setActivePhotoUrl(null)} />
     </main>
