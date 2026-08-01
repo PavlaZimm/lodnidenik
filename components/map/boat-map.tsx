@@ -5,7 +5,7 @@ import { TrackPoint, LogEntry } from "@/lib/types/logbook"
 import { DOLNI_ZALEZLY_COORDS } from "@/lib/services/storage"
 import { fetchLiveVessels, Vessel } from "@/lib/services/ais"
 import "leaflet/dist/leaflet.css"
-import { Ship } from "lucide-react"
+import { Ship, Layers } from "lucide-react"
 
 interface BoatMapProps {
   track: TrackPoint[]
@@ -15,6 +15,8 @@ interface BoatMapProps {
   onSelectEntry?: (id: string) => void
   onMapClick?: (lat: number, lng: number) => void
 }
+
+type MapLayerType = "seamap" | "osm" | "satellite"
 
 export default function BoatMap({
   track,
@@ -28,8 +30,11 @@ export default function BoatMap({
   const mapInstanceRef = useRef<any>(null)
   const layerGroupRef = useRef<any>(null)
   const aisGroupRef = useRef<any>(null)
+  const tileLayerRef = useRef<any>(null)
+  const seaOverlayRef = useRef<any>(null)
 
   const [showAis, setShowAis] = useState(true)
+  const [activeLayer, setActiveLayer] = useState<MapLayerType>("seamap")
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return
@@ -51,14 +56,16 @@ export default function BoatMap({
         zoomControl: true,
       })
 
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      // Base tile layer: OpenStreetMap Standard
+      tileLayerRef.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map)
 
-      L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
+      // OpenSeaMap Overlay (Seamarks, buoys, ports)
+      seaOverlayRef.current = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
         maxZoom: 18,
-        attribution: '&copy; <a href="http://www.openseamap.org">OpenSeaMap</a> contributors',
+        attribution: '&copy; <a href="http://www.openseamap.org">OpenSeaMap</a>',
       }).addTo(map)
 
       map.on("click", (e: any) => {
@@ -80,7 +87,51 @@ export default function BoatMap({
     }
   }, [])
 
-  // Render AIS Ships Layer dynamically
+  // Switch Map Layer (OpenSeaMap vs Standard OSM vs Esri Satellite)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !tileLayerRef.current) return
+
+    import("leaflet").then((L) => {
+      const map = mapInstanceRef.current
+      if (tileLayerRef.current) map.removeLayer(tileLayerRef.current)
+      if (seaOverlayRef.current) map.removeLayer(seaOverlayRef.current)
+
+      if (activeLayer === "satellite") {
+        // Satelitní mapa s vysokým rozlišením (Esri World Imagery)
+        tileLayerRef.current = L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 19,
+            attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+          }
+        ).addTo(map)
+
+        // Přidat OpenSeaMap námořní vrstvu i na satelit!
+        seaOverlayRef.current = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+        }).addTo(map)
+      } else if (activeLayer === "seamap") {
+        // Standardní turistická OSM + OpenSeaMap plavební značky
+        tileLayerRef.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map)
+
+        seaOverlayRef.current = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+          attribution: '&copy; <a href="http://www.openseamap.org">OpenSeaMap</a>',
+        }).addTo(map)
+      } else {
+        // Čistá mapa bez námořních překryvů
+        tileLayerRef.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map)
+      }
+    })
+  }, [activeLayer])
+
+  // Render AIS Ships Layer
   useEffect(() => {
     if (!mapInstanceRef.current || !aisGroupRef.current) return
 
@@ -161,7 +212,7 @@ export default function BoatMap({
       const group = layerGroupRef.current
       group.clearLayers()
 
-      // Domovské stanoviště Dolní Zálezly — bez přetékání textu
+      // Domovské stanoviště Dolní Zálezly
       const homeIcon = L.divIcon({
         className: "home-port-marker",
         html: `
@@ -310,22 +361,64 @@ export default function BoatMap({
     <div className="relative w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden border border-border shadow-sm">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* AIS Toggle Button */}
-      <button
-        onClick={() => setShowAis(!showAis)}
-        className={`absolute top-3 right-3 z-10 px-3 py-1.5 rounded-lg border shadow-md font-sans text-xs font-semibold flex items-center gap-1.5 transition-all ${
-          showAis
-            ? "bg-primary text-primary-foreground border-primary"
-            : "bg-background/90 text-foreground border-border hover:bg-secondary"
-        }`}
-      >
-        <Ship className="size-4" />
-        <span>{showAis ? "Lodě v okolí (AIS ON)" : "Zobrazit lodě v okolí"}</span>
-      </button>
+      {/* Layer Switcher & AIS Toggle controls */}
+      <div className="absolute top-3 right-3 z-10 flex flex-col md:flex-row items-end md:items-center gap-2">
+        {/* Map Layer Selector */}
+        <div className="bg-background/95 backdrop-blur-md border border-border shadow-md rounded-lg p-1 flex items-center gap-1 text-xs">
+          <Layers className="size-3.5 text-muted-foreground ml-1.5" />
+          <button
+            onClick={() => setActiveLayer("seamap")}
+            className={`px-2 py-1 rounded font-medium transition-colors ${
+              activeLayer === "seamap"
+                ? "bg-primary text-white"
+                : "text-foreground hover:bg-secondary"
+            }`}
+          >
+            🌊 Námořní OpenSeaMap
+          </button>
+          <button
+            onClick={() => setActiveLayer("satellite")}
+            className={`px-2 py-1 rounded font-medium transition-colors ${
+              activeLayer === "satellite"
+                ? "bg-primary text-white"
+                : "text-foreground hover:bg-secondary"
+            }`}
+          >
+            🛰️ Satelitní
+          </button>
+          <button
+            onClick={() => setActiveLayer("osm")}
+            className={`px-2 py-1 rounded font-medium transition-colors ${
+              activeLayer === "osm"
+                ? "bg-primary text-white"
+                : "text-foreground hover:bg-secondary"
+            }`}
+          >
+            🗺️ Základní
+          </button>
+        </div>
+
+        {/* AIS Toggle Button */}
+        <button
+          onClick={() => setShowAis(!showAis)}
+          className={`px-3 py-1.5 rounded-lg border shadow-md font-sans text-xs font-semibold flex items-center gap-1.5 transition-all ${
+            showAis
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background/90 text-foreground border-border hover:bg-secondary"
+          }`}
+        >
+          <Ship className="size-4" />
+          <span>{showAis ? "Lodě (AIS ON)" : "Zobrazit lodě"}</span>
+        </button>
+      </div>
 
       <div className="absolute bottom-2 left-2 z-10 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded border border-border text-[11px] font-mono text-muted-foreground flex items-center gap-2">
         <span className="inline-block size-2 rounded-full bg-primary animate-pulse" />
-        OpenSeaMap + OSM + AIS Radar
+        {activeLayer === "seamap"
+          ? "OpenSeaMap (Plavební znaky, bóje, přístavy)"
+          : activeLayer === "satellite"
+          ? "Satelitní mapa Labe"
+          : "Základní vodní dráha"}
       </div>
     </div>
   )
