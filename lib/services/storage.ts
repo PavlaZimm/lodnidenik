@@ -3,32 +3,35 @@ import { Trip } from "@/lib/types/logbook"
 const STORAGE_KEY = "rodinny_lodni_denik_trips"
 const ACTIVE_TRIP_ID_KEY = "rodinny_lodni_denik_active_id"
 
+// Přesná poloha plavebního koryta Labe v Dolních Zálezlech
 export const DOLNI_ZALEZLY_COORDS = { lat: 50.5973179, lng: 14.0430777 }
 
 export const INITIAL_DEMO_TRIP: Trip = {
   id: "demo-trip-labe",
   name: "Plavba po Labi z Dolních Zálezel",
-  description: "Domovský přístav: Dolní Zálezly. Výprava po řece Labi údolím Porta Bohemica.",
+  description: "Domovský přístav: Dolní Zálezly. Výprava po řece Labi kaňonem Porta Bohemica do Litoměřic.",
   startDate: "2026-08-01T09:00:00.000Z",
   status: "active",
-  totalDistanceKm: 18.5,
+  totalDistanceKm: 16.8,
   preTripCheck: {
-    departureHarbour: "Dolní Zálezly (Domovský přístav)",
-    destinationHarbour: "Litoměřice / Střekov",
+    departureHarbour: "Dolní Zálezly (Domovský přístav Labe)",
+    destinationHarbour: "Litoměřice — Říční km 790",
     captain: "Táta (Kapitán)",
     crew: "Máma a rodina",
     weatherForecast: "Slunečno, 25°C, mírný vítr 2 m/s",
-    fuelLevel: "100 %",
-    engineHours: "148.0 h",
-    boatNotes: "Loď sídlí v Dolních Zálezlech. Zkontrolován motor, lana, palivo i vesty.",
+    fuelLevel: "100 % (Plná nádrž)",
+    engineHours: "148.0 mth",
+    boatNotes: "Loď sídlí v Dolních Zálezlech na Labi. Zkontrolován motor, lana, palivo i vesty.",
     departureDate: "2026-08-01T09:00",
   },
+  // Přesné GPS souřadnice plavebního koryta Labe
   track: [
-    { id: "tp-1", lat: 50.5973, lng: 14.0431, timestamp: "2026-08-01T09:15:00.000Z", speedKnots: 0.0 },
-    { id: "tp-2", lat: 50.5845, lng: 14.0542, timestamp: "2026-08-01T09:45:00.000Z", speedKnots: 5.4 },
-    { id: "tp-3", lat: 50.5650, lng: 14.0810, timestamp: "2026-08-01T10:30:00.000Z", speedKnots: 5.8 },
-    { id: "tp-4", lat: 50.5420, lng: 14.1150, timestamp: "2026-08-01T11:15:00.000Z", speedKnots: 4.5 },
-    { id: "tp-5", lat: 50.5332, lng: 14.1331, timestamp: "2026-08-01T12:00:00.000Z", speedKnots: 0.0 },
+    { id: "tp-1", lat: 50.5973, lng: 14.0431, timestamp: "2026-08-01T09:15:00.000Z", speedKnots: 0.0 }, // Dolní Zálezly na vodě
+    { id: "tp-2", lat: 50.5840, lng: 14.0540, timestamp: "2026-08-01T09:45:00.000Z", speedKnots: 5.4 }, // Církvice meandr
+    { id: "tp-3", lat: 50.5505, lng: 14.0620, timestamp: "2026-08-01T10:30:00.000Z", speedKnots: 5.8 }, // Porta Bohemica
+    { id: "tp-4", lat: 50.5280, lng: 14.0780, timestamp: "2026-08-01T11:15:00.000Z", speedKnots: 4.5 }, // Velké Žernoseky / Píšťany
+    { id: "tp-5", lat: 50.5140, lng: 14.0650, timestamp: "2026-08-01T11:45:00.000Z", speedKnots: 5.0 }, // Lovosice ohyb
+    { id: "tp-6", lat: 50.5315, lng: 14.1335, timestamp: "2026-08-01T12:30:00.000Z", speedKnots: 0.0 }, // Litoměřice molo na vodě
   ],
   entries: [
     {
@@ -36,8 +39,8 @@ export const INITIAL_DEMO_TRIP: Trip = {
       tripId: "demo-trip-labe",
       timestamp: "2026-08-01T09:15:00.000Z",
       title: "Domovský přístav — Dolní Zálezly",
-      text: "Domovské stanoviště lodi na Labi v Dolních Zálezlech. Odplouváme za krásného letního počasí.",
-      placeName: "Dolní Zálezly (Labe)",
+      text: "Vyplouváme z domovského stanoviště na řece Labi v Dolních Zálezlech.",
+      placeName: "Dolní Zálezly (Koryto Labe)",
       lat: 50.5973179,
       lng: 14.0430777,
       category: "anchor",
@@ -48,22 +51,22 @@ export const INITIAL_DEMO_TRIP: Trip = {
       tripId: "demo-trip-labe",
       timestamp: "2026-08-01T10:30:00.000Z",
       title: "Průjezd kaňonem Porta Bohemica",
-      text: "Nádherné výhledy na vinice a skály v Labském údolí.",
+      text: "Plavba přes nádhernou skalní bránu Porta Bohemica na řece Labi.",
       placeName: "Porta Bohemica - Labe",
-      lat: 50.565,
-      lng: 14.081,
+      lat: 50.5505,
+      lng: 14.0620,
       category: "sight",
       photos: [],
     },
     {
       id: "e-3",
       tripId: "demo-trip-labe",
-      timestamp: "2026-08-01T12:00:00.000Z",
+      timestamp: "2026-08-01T12:30:00.000Z",
       title: "Kotvení u Litoměřic",
-      text: "Příjezd k Litoměřicím, oběd a relaxace na lodi.",
-      placeName: "Litoměřice - Kotviště",
-      lat: 50.5332,
-      lng: 14.1331,
+      text: "Přistání u mola na vodě v Litoměřicích, pauza na oběd na palubě.",
+      placeName: "Litoměřice - Říční kotviště",
+      lat: 50.5315,
+      lng: 14.1335,
       category: "stop",
       photos: [],
     },
