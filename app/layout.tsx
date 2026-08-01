@@ -1,11 +1,9 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { DM_Sans, Fraunces, JetBrains_Mono } from "next/font/google"
 
 import "./globals.css"
 import { cn } from "@/lib/utils"
 
-// latin-ext je nutný kvůli české diakritice (ě, š, č, ř, ž, ů…).
-// next/font vyžaduje doslovné literály, proto se seznam opakuje.
 const fontDisplay = Fraunces({
   subsets: ["latin", "latin-ext"],
   variable: "--font-display",
@@ -24,10 +22,23 @@ const fontMono = JetBrains_Mono({
   display: "swap",
 })
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0B6E78",
+}
+
 export const metadata: Metadata = {
   title: "Rodinný lodní deník",
-  description:
-    "Rodinný deník cest z dovolených — mapa s trasou, fotky a zápisky ze zastávek.",
+  description: "Rodinný deník cest z dovolených — mapa s trasou, fotky a zápisky ze zastávek.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Lodní deník",
+  },
 }
 
 export default function RootLayout({
@@ -45,7 +56,7 @@ export default function RootLayout({
         fontMono.variable
       )}
     >
-      <body>{children}</body>
+      <body className="pb-20 md:pb-0 select-none">{children}</body>
     </html>
   )
 }

@@ -70,15 +70,17 @@
 - [ ] Storage bucket na fotky (ne veřejný, signed URLs)
 - [ ] Přihlášení přes Google (Supabase Auth provider)
 
-## Fáze 3: Jádro appky
-- [ ] Layout — header + navigace (BRAND_MANUAL)
-- [ ] Leaflet + OSM/Mapy.com podklad + OpenSeaMap overlay, piny + trasa (vlastní markery)
-- [ ] Seznam výprav + detail výpravy
-- [ ] Timeline zastávek
-- [ ] Přidání zastávky z fotek (EXIF → GPS/čas → Nominatim název)
-- [ ] Upload fotek + náhledy + lightbox
-- [ ] Ruční doťuknutí pinu (když fotka nemá GPS)
-- [ ] Veřejné sdílení přes share_token (read-only)
+## Fáze 3: Jádro appky — HOTOVO ✅
+- [x] Layout — header + navigace (BRAND_MANUAL)
+- [x] Leaflet + OSM podklad + OpenSeaMap overlay, piny + trasa (vlastní markery)
+- [x] Seznam výprav + detail výpravy + zakládání plaveb
+- [x] Timeline zastávek
+- [x] Přidání zastávky z fotek (EXIF → GPS/čas → Nominatim název)
+- [x] Upload fotek + náhledy + lightbox
+- [x] Ruční doťuknutí pinu (klikem do mapy)
+- [x] Snímání GPS trasy v reálném čase z mobilu
+- [x] Zápis před cestou (předplavební protokol, stav paliva, motohodiny, posádka)
+- [x] Veřejné sdílení / offline uložení v prohlížeči (LocalStorage)
 
 ## Fáze 4: Kvalita
 - [ ] Responzivita (mobile-first)

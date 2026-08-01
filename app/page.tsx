@@ -1,47 +1,335 @@
-import { Anchor, Compass, MapPin } from "lucide-react"
+"use client"
 
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useCallback } from "react"
+import dynamic from "next/dynamic"
+import { Trip, LogEntry, PreTripCheck, TrackPoint } from "@/lib/types/logbook"
+import {
+  loadTripsFromStorage,
+  saveTripsToStorage,
+  loadActiveTripId,
+  saveActiveTripId,
+  INITIAL_DEMO_TRIP,
+} from "@/lib/services/storage"
+import { useGpsTracker } from "@/lib/hooks/use-gps-tracker"
+import { TripHeader } from "@/components/logbook/trip-header"
+import { Timeline } from "@/components/logbook/timeline"
+import { PreTripForm } from "@/components/logbook/pre-trip-form"
+import { AddEntryDialog } from "@/components/logbook/add-entry-dialog"
+import { EditEntryDialog } from "@/components/logbook/edit-entry-dialog"
+import { PhotoLightbox } from "@/components/logbook/photo-lightbox"
+import { Anchor, Compass, Info, CheckCircle2, MapPin, Play, Square, ClipboardCheck } from "lucide-react"
 
-// Dočasná úvodní stránka — slouží k ověření tokenů a fontů. Nahradí ji Fáze 3.
-export default function Page() {
+const BoatMap = dynamic(() => import("@/components/map/boat-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[380px] md:h-[500px] rounded-xl bg-secondary/40 animate-pulse flex flex-col items-center justify-center border border-border text-muted-foreground gap-2">
+      <Anchor className="size-8 animate-bounce text-primary" />
+      <span className="font-mono text-xs">Načítám lodní mapu a plavební značení...</span>
+    </div>
+  ),
+})
+
+export default function Home() {
+  const [trips, setTrips] = useState<Trip[]>([INITIAL_DEMO_TRIP])
+  const [activeTripId, setActiveTripId] = useState<string>(INITIAL_DEMO_TRIP.id)
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
+  const [showPreTripModal, setShowPreTripModal] = useState(false)
+  const [showAddEntryModal, setShowAddEntryModal] = useState(false)
+  const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
+  const [activePhotoUrl, setActivePhotoUrl] = useState<string | null>(null)
+  const [manualClickCoords, setManualClickCoords] = useState<{ lat: number; lng: number } | null>(
+    null
+  )
+
+  useEffect(() => {
+    const loadedTrips = loadTripsFromStorage()
+    const activeId = loadActiveTripId()
+    setTrips(loadedTrips)
+    if (loadedTrips.some((t) => t.id === activeId)) {
+      setActiveTripId(activeId)
+    } else if (loadedTrips.length > 0) {
+      setActiveTripId(loadedTrips[0].id)
+    }
+  }, [])
+
+  const updateTripsState = useCallback((newTrips: Trip[]) => {
+    setTrips(newTrips)
+    saveTripsToStorage(newTrips)
+  }, [])
+
+  const activeTrip = trips.find((t) => t.id === activeTripId) || trips[0] || INITIAL_DEMO_TRIP
+
+  const handleGpsPoint = useCallback(
+    (point: TrackPoint, _arr: TrackPoint[], addedKm: number) => {
+      setTrips((prevTrips) => {
+        const updated = prevTrips.map((t) => {
+          if (t.id === activeTrip.id) {
+            return {
+              ...t,
+              track: [...t.track, point],
+              totalDistanceKm: t.totalDistanceKm + addedKm,
+            }
+          }
+          return t
+        })
+        saveTripsToStorage(updated)
+        return updated
+      })
+    },
+    [activeTrip.id]
+  )
+
+  const { isTracking, currentPosition, error: gpsError, startTracking, stopTracking } = useGpsTracker(
+    handleGpsPoint
+  )
+
+  const handleCreateTrip = () => {
+    const name = prompt("Zadejte název nové plavby:", `Plavba ${new Date().toLocaleDateString("cs-CZ")}`)
+    if (!name) return
+
+    const newTrip: Trip = {
+      id: `trip-${Date.now()}`,
+      name,
+      startDate: new Date().toISOString(),
+      status: "active",
+      totalDistanceKm: 0,
+      track: [],
+      entries: [],
+    }
+
+    const updated = [newTrip, ...trips]
+    updateTripsState(updated)
+    setActiveTripId(newTrip.id)
+    saveActiveTripId(newTrip.id)
+  }
+
+  const handleDeleteTrip = (tripId: string) => {
+    const updated = trips.filter((t) => t.id !== tripId)
+    if (updated.length > 0) {
+      updateTripsState(updated)
+      setActiveTripId(updated[0].id)
+      saveActiveTripId(updated[0].id)
+    }
+  }
+
+  const handleSavePreTrip = (preCheck: PreTripCheck) => {
+    const updated = trips.map((t) => {
+      if (t.id === activeTrip.id) {
+        return { ...t, preTripCheck: preCheck }
+      }
+      return t
+    })
+    updateTripsState(updated)
+    setShowPreTripModal(false)
+  }
+
+  const handleSaveEntry = (entry: LogEntry) => {
+    const updated = trips.map((t) => {
+      if (t.id === activeTrip.id) {
+        return {
+          ...t,
+          entries: [entry, ...t.entries],
+        }
+      }
+      return t
+    })
+    updateTripsState(updated)
+    setShowAddEntryModal(false)
+    setSelectedEntryId(entry.id)
+  }
+
+  const handleUpdateEntry = (updatedEntry: LogEntry) => {
+    const updated = trips.map((t) => {
+      if (t.id === activeTrip.id) {
+        return {
+          ...t,
+          entries: t.entries.map((e) => (e.id === updatedEntry.id ? updatedEntry : e)),
+        }
+      }
+      return t
+    })
+    updateTripsState(updated)
+    setEditingEntry(null)
+  }
+
+  const handleDeleteEntry = (entryId: string) => {
+    const updated = trips.map((t) => {
+      if (t.id === activeTrip.id) {
+        return {
+          ...t,
+          entries: t.entries.filter((e) => e.id !== entryId),
+        }
+      }
+      return t
+    })
+    updateTripsState(updated)
+  }
+
+  const handleMapClick = (lat: number, lng: number) => {
+    setManualClickCoords({ lat, lng })
+    setShowAddEntryModal(true)
+  }
+
   return (
-    <main className="mx-auto flex min-h-svh max-w-[1120px] flex-col justify-center gap-8 px-6 py-16">
-      <div className="flex items-center gap-3 text-brass">
-        <Compass className="size-6" strokeWidth={1.75} aria-hidden />
-        <span className="font-mono text-xs tracking-widest uppercase">
-          Fáze 1 — základy stojí
-        </span>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <h1 className="font-display text-4xl leading-[1.1] font-semibold md:text-5xl">
-          Rodinný lodní deník
-        </h1>
-        <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
-          Mapa s trasou, fotky a zápisky ze zastávek. Zatím prázdný — první
-          výprava se přidá, až bude hotová databáze.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Button size="lg">
-          <MapPin strokeWidth={1.75} />
-          Přidat zastávku
-        </Button>
-        <Button size="lg" variant="secondary">
-          Prohlédnout výpravy
-        </Button>
-      </div>
-
-      <div className="rounded-lg border bg-secondary p-6">
-        <div className="flex items-center gap-2">
-          <Anchor className="size-5 text-primary" strokeWidth={1.75} aria-hidden />
-          <h2 className="font-display text-xl font-semibold">Attersee 2026</h2>
+    <main className="min-h-svh max-w-[1120px] mx-auto px-4 py-4 md:py-10 space-y-5">
+      {/* Top App Header */}
+      <header className="flex items-center justify-between border-b border-border pb-3">
+        <div className="flex items-center gap-2.5">
+          <Compass className="size-7 md:size-8 text-primary" strokeWidth={1.75} />
+          <div>
+            <h1 className="font-display text-xl md:text-3xl font-bold tracking-tight text-foreground">
+              Rodinný lodní deník
+            </h1>
+            <p className="text-[11px] font-mono text-muted-foreground">
+              Plavební deník s GPS pro rodiče
+            </p>
+          </div>
         </div>
-        <p className="mt-2 font-mono text-xs text-muted-foreground">
-          47.8833° N, 13.5500° E · 22. 7. 2026
-        </p>
+      </header>
+
+      {/* GPS Error Alert */}
+      {gpsError && (
+        <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs md:text-sm flex items-center gap-2.5">
+          <Info className="size-4 shrink-0" />
+          <span>{gpsError}</span>
+        </div>
+      )}
+
+      {/* Dashboard Control Header */}
+      <TripHeader
+        trips={trips}
+        activeTrip={activeTrip}
+        isTracking={isTracking}
+        currentSpeedKnots={currentPosition?.speedKnots}
+        onSelectTrip={(id) => {
+          setActiveTripId(id)
+          saveActiveTripId(id)
+        }}
+        onCreateTrip={handleCreateTrip}
+        onDeleteTrip={handleDeleteTrip}
+        onToggleTracking={isTracking ? stopTracking : startTracking}
+        onOpenPreTripCheck={() => setShowPreTripModal(true)}
+        onAddEntry={() => {
+          setManualClickCoords(null)
+          setShowAddEntryModal(true)
+        }}
+      />
+
+      {/* Pre-Trip Badge */}
+      {activeTrip.preTripCheck && (
+        <div className="p-3.5 bg-secondary/30 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="size-4 text-success shrink-0" />
+            <div>
+              <span className="font-semibold text-foreground font-display text-sm">
+                Příprava: {activeTrip.preTripCheck.departureHarbour} &rarr;{" "}
+                {activeTrip.preTripCheck.destinationHarbour || "Cíl v itineráři"}
+              </span>
+              <div className="text-muted-foreground mt-0.5">
+                Kapitán: <strong className="text-foreground">{activeTrip.preTripCheck.captain}</strong> ·
+                Počasí: {activeTrip.preTripCheck.weatherForecast} · Palivo: {activeTrip.preTripCheck.fuelLevel}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowPreTripModal(true)}
+            className="text-primary hover:underline font-medium self-start md:self-auto"
+          >
+            Zobrazit protokol &rarr;
+          </button>
+        </div>
+      )}
+
+      {/* Interactive Nautical Map */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+          <span>Mapa plavby & plavební dráhy (Klepením přidáte zastávku)</span>
+          <span>{activeTrip.entries.length} zastávek</span>
+        </div>
+        <BoatMap
+          track={activeTrip.track}
+          entries={activeTrip.entries}
+          currentPosition={currentPosition}
+          selectedEntryId={selectedEntryId}
+          onSelectEntry={setSelectedEntryId}
+          onMapClick={handleMapClick}
+        />
+      </section>
+
+      {/* Timeline view */}
+      <section className="pt-2">
+        <Timeline
+          entries={activeTrip.entries}
+          selectedEntryId={selectedEntryId}
+          onSelectEntry={setSelectedEntryId}
+          onEditEntry={(entry) => setEditingEntry(entry)}
+          onDeleteEntry={handleDeleteEntry}
+          onOpenPhoto={setActivePhotoUrl}
+        />
+      </section>
+
+      {/* MOBILE STICKY BOTTOM DOCK */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border p-3 shadow-lg flex items-center justify-around gap-2">
+        <button
+          onClick={() => setShowPreTripModal(true)}
+          className="flex flex-col items-center gap-1 text-[11px] font-medium text-foreground py-1 px-2 rounded hover:bg-secondary"
+        >
+          <ClipboardCheck className="size-5 text-brass" />
+          <span>Příprava</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setManualClickCoords(null)
+            setShowAddEntryModal(true)
+          }}
+          className="flex items-center justify-center gap-2 bg-brass text-white font-semibold py-2.5 px-4 rounded-full shadow-md text-xs active:scale-95 transition-transform"
+        >
+          <MapPin className="size-4" />
+          <span>Přidat fotku / zápis</span>
+        </button>
+
+        <button
+          onClick={isTracking ? stopTracking : startTracking}
+          className={`flex flex-col items-center gap-1 text-[11px] font-medium py-1 px-2 rounded ${
+            isTracking ? "text-destructive" : "text-primary"
+          }`}
+        >
+          {isTracking ? <Square className="size-5 fill-current animate-pulse" /> : <Play className="size-5 fill-current" />}
+          <span>{isTracking ? "Stop GPS" : "Snímat GPS"}</span>
+        </button>
       </div>
+
+      {/* Modals & Lightbox */}
+      {showPreTripModal && (
+        <PreTripForm
+          initialValues={activeTrip.preTripCheck}
+          onSave={handleSavePreTrip}
+          onClose={() => setShowPreTripModal(false)}
+        />
+      )}
+
+      {showAddEntryModal && (
+        <AddEntryDialog
+          tripId={activeTrip.id}
+          currentLocation={
+            manualClickCoords ||
+            (currentPosition ? { lat: currentPosition.lat, lng: currentPosition.lng } : null)
+          }
+          onSave={handleSaveEntry}
+          onClose={() => setShowAddEntryModal(false)}
+        />
+      )}
+
+      {editingEntry && (
+        <EditEntryDialog
+          entry={editingEntry}
+          onSave={handleUpdateEntry}
+          onClose={() => setEditingEntry(null)}
+        />
+      )}
+
+      <PhotoLightbox url={activePhotoUrl} onClose={() => setActivePhotoUrl(null)} />
     </main>
   )
 }

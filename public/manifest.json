@@ -1,0 +1,17 @@
+{
+  "name": "Rodinný lodní deník",
+  "short_name": "Lodní deník",
+  "description": "Rodinný deník plaveb na lodi s GPS záznamem a fotkami",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F3EA",
+  "theme_color": "#0B6E78",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
