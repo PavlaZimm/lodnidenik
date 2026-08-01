@@ -2,13 +2,15 @@
 
 import { Trip } from "@/lib/types/logbook"
 import { Button } from "@/components/ui/button"
-import { Anchor, Compass, Play, Square, ClipboardCheck, Plus, Navigation, MapPin, Trash2 } from "lucide-react"
+import { Anchor, Compass, Play, Square, ClipboardCheck, Plus, Navigation, MapPin, Trash2, Clock, Zap } from "lucide-react"
 
 interface TripHeaderProps {
   trips: Trip[]
   activeTrip: Trip
   isTracking: boolean
   currentSpeedKnots?: number
+  maxSpeedKnots?: number
+  elapsedSeconds?: number
   onSelectTrip: (id: string) => void
   onCreateTrip: () => void
   onDeleteTrip: (id: string) => void
@@ -17,11 +19,23 @@ interface TripHeaderProps {
   onAddEntry: () => void
 }
 
+function formatTimer(seconds: number): string {
+  const hrs = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+  if (hrs > 0) {
+    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+}
+
 export function TripHeader({
   trips,
   activeTrip,
   isTracking,
   currentSpeedKnots,
+  maxSpeedKnots = 0,
+  elapsedSeconds = 0,
   onSelectTrip,
   onCreateTrip,
   onDeleteTrip,
@@ -120,7 +134,7 @@ export function TripHeader({
         </div>
       </div>
 
-      {/* Navigation Stats & Details Bar */}
+      {/* Navigation Stats & Details Bar (Strava/Run-Style Navigation HUD) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-border/60">
         <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
           <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
@@ -139,19 +153,28 @@ export function TripHeader({
             <Compass className="size-3.5 text-brass" /> Rychlost plavby
           </div>
           <div className="font-mono text-lg font-bold text-foreground mt-0.5">
-            {currentSpeedKnots ? `${currentSpeedKnots} kts` : "0.0 kts"}
+            {currentSpeedKnots ? `${currentSpeedKnots} kts` : "0.0 kts"}{" "}
+            {maxSpeedKnots > 0 && (
+              <span className="text-xs font-normal text-muted-foreground">
+                (max {maxSpeedKnots} kts)
+              </span>
+            )}
           </div>
         </div>
 
         <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
-          <div className="text-[11px] font-mono text-muted-foreground uppercase">Počet zastávek</div>
+          <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
+            <Clock className="size-3.5 text-primary" /> Doba plavby
+          </div>
           <div className="font-mono text-lg font-bold text-foreground mt-0.5">
-            {activeTrip.entries.length} záznamů
+            {isTracking ? formatTimer(elapsedSeconds) : "--:--"}
           </div>
         </div>
 
         <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
-          <div className="text-[11px] font-mono text-muted-foreground uppercase">GPS Snímání</div>
+          <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
+            <Zap className="size-3.5 text-success" /> GPS Snímání
+          </div>
           <div className="font-mono text-xs font-semibold mt-1.5 flex items-center gap-2">
             {isTracking ? (
               <>
@@ -159,7 +182,7 @@ export function TripHeader({
                   <span className="animate-ping absolute inline-flex size-full rounded-full bg-success opacity-75"></span>
                   <span className="relative inline-flex size-2.5 rounded-full bg-success"></span>
                 </span>
-                <span className="text-success font-medium">Aktivní záznam trasy</span>
+                <span className="text-success font-medium">Živé trasování plavby</span>
               </>
             ) : (
               <>

@@ -79,9 +79,15 @@ export default function Home() {
     [activeTrip.id]
   )
 
-  const { isTracking, currentPosition, error: gpsError, startTracking, stopTracking } = useGpsTracker(
-    handleGpsPoint
-  )
+  const {
+    isTracking,
+    currentPosition,
+    elapsedSeconds,
+    maxSpeedKnots,
+    error: gpsError,
+    startTracking,
+    stopTracking,
+  } = useGpsTracker(handleGpsPoint)
 
   const handleCreateTrip = () => {
     const name = prompt("Zadejte název nové plavby:", `Plavba ${new Date().toLocaleDateString("cs-CZ")}`)
@@ -181,7 +187,7 @@ export default function Home() {
               Rodinný lodní deník
             </h1>
             <p className="text-[11px] font-mono text-muted-foreground">
-              Plavební deník s GPS pro rodiče
+              Plavební deník s živým trasováním GPS pro rodiče
             </p>
           </div>
         </div>
@@ -195,12 +201,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* Dashboard Control Header */}
+      {/* Dashboard Control Header with Live Run/Sailing HUD */}
       <TripHeader
         trips={trips}
         activeTrip={activeTrip}
         isTracking={isTracking}
         currentSpeedKnots={currentPosition?.speedKnots}
+        maxSpeedKnots={maxSpeedKnots}
+        elapsedSeconds={elapsedSeconds}
         onSelectTrip={(id) => {
           setActiveTripId(id)
           saveActiveTripId(id)

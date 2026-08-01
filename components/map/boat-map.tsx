@@ -5,7 +5,7 @@ import { TrackPoint, LogEntry } from "@/lib/types/logbook"
 import { DOLNI_ZALEZLY_COORDS } from "@/lib/services/storage"
 import { fetchLiveVessels, Vessel } from "@/lib/services/ais"
 import "leaflet/dist/leaflet.css"
-import { Ship, Layers } from "lucide-react"
+import { Ship, Layers, Navigation } from "lucide-react"
 
 interface BoatMapProps {
   track: TrackPoint[]
@@ -35,6 +35,7 @@ export default function BoatMap({
 
   const [showAis, setShowAis] = useState(true)
   const [activeLayer, setActiveLayer] = useState<MapLayerType>("seamap")
+  const [autoFollowBoat, setAutoFollowBoat] = useState(true)
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return
@@ -50,19 +51,19 @@ export default function BoatMap({
       const centerLat = DOLNI_ZALEZLY_COORDS.lat
       const centerLng = DOLNI_ZALEZLY_COORDS.lng
 
+      // High-performance canvas renderer for ultra-smooth map rendering
       const map = L.map(mapContainerRef.current!, {
         center: [centerLat, centerLng],
         zoom: 12,
         zoomControl: true,
+        preferCanvas: true,
       })
 
-      // Base tile layer: OpenStreetMap Standard
       tileLayerRef.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map)
 
-      // OpenSeaMap Overlay (Seamarks, buoys, ports)
       seaOverlayRef.current = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
         maxZoom: 18,
         attribution: '&copy; <a href="http://www.openseamap.org">OpenSeaMap</a>',
@@ -87,7 +88,7 @@ export default function BoatMap({
     }
   }, [])
 
-  // Switch Map Layer (OpenSeaMap vs Standard OSM vs Esri Satellite)
+  // Switch Map Layers
   useEffect(() => {
     if (!mapInstanceRef.current || !tileLayerRef.current) return
 
@@ -97,21 +98,18 @@ export default function BoatMap({
       if (seaOverlayRef.current) map.removeLayer(seaOverlayRef.current)
 
       if (activeLayer === "satellite") {
-        // Satelitní mapa s vysokým rozlišením (Esri World Imagery)
         tileLayerRef.current = L.tileLayer(
           "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
           {
             maxZoom: 19,
-            attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+            attribution: "Tiles &copy; Esri &mdash; Source: Esri",
           }
         ).addTo(map)
 
-        // Přidat OpenSeaMap námořní vrstvu i na satelit!
         seaOverlayRef.current = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
           maxZoom: 18,
         }).addTo(map)
       } else if (activeLayer === "seamap") {
-        // Standardní turistická OSM + OpenSeaMap plavební značky
         tileLayerRef.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -122,7 +120,6 @@ export default function BoatMap({
           attribution: '&copy; <a href="http://www.openseamap.org">OpenSeaMap</a>',
         }).addTo(map)
       } else {
-        // Čistá mapa bez námořních překryvů
         tileLayerRef.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -131,7 +128,7 @@ export default function BoatMap({
     })
   }, [activeLayer])
 
-  // Render AIS Ships Layer
+  // Render AIS Vessels
   useEffect(() => {
     if (!mapInstanceRef.current || !aisGroupRef.current) return
 
@@ -204,7 +201,7 @@ export default function BoatMap({
     }
   }, [showAis])
 
-  // Render Log Entries & Track Layer
+  // Render Log Entries & Smooth Dynamic Running/Sailing Track Line
   useEffect(() => {
     if (!mapInstanceRef.current || !layerGroupRef.current) return
 
@@ -212,7 +209,7 @@ export default function BoatMap({
       const group = layerGroupRef.current
       group.clearLayers()
 
-      // Domovské stanoviště Dolní Zálezly
+      // Domovský přístav
       const homeIcon = L.divIcon({
         className: "home-port-marker",
         html: `
@@ -253,16 +250,24 @@ export default function BoatMap({
       `)
       homeMarker.addTo(group)
 
-      // Trasa
+      // Strava/Run-Style Glowing Dynamic Route Polyline
       if (track.length > 1) {
         const polylineCoords = track.map((p) => [p.lat, p.lng] as [number, number])
-        const routeLine = L.polyline(polylineCoords, {
-          color: "oklch(0.493 0.082 206.2)",
+
+        // Outer glow line
+        L.polyline(polylineCoords, {
+          color: "#0B6E78",
+          weight: 8,
+          opacity: 0.35,
+        }).addTo(group)
+
+        // Core solid line
+        L.polyline(polylineCoords, {
+          color: "#0B6E78",
           weight: 4,
-          opacity: 0.85,
-          dashArray: "6, 8",
-        })
-        routeLine.addTo(group)
+          opacity: 0.95,
+          dashArray: "8, 6",
+        }).addTo(group)
       }
 
       // Zastávky
@@ -313,56 +318,85 @@ export default function BoatMap({
         marker.addTo(group)
       })
 
-      // GPS Poloha
+      // Live Boat / Current GPS Marker with animated pulse & heading arrow
       if (currentPosition) {
         const liveIcon = L.divIcon({
           className: "live-gps-marker",
           html: `
             <div style="position: relative;">
               <div style="
-                width: 20px;
-                height: 20px;
+                width: 24px;
+                height: 24px;
                 background-color: #0B6E78;
                 border: 3px solid white;
                 border-radius: 50%;
-                box-shadow: 0 0 10px rgba(11,110,120,0.8);
-              "></div>
+                box-shadow: 0 0 12px rgba(11,110,120,0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 10px;
+              ">⛵</div>
               <div style="
                 position: absolute;
-                top: -6px;
-                left: -6px;
-                width: 32px;
-                height: 32px;
+                top: -8px;
+                left: -8px;
+                width: 40px;
+                height: 40px;
                 border-radius: 50%;
                 background-color: rgba(11,110,120,0.25);
-                animation: pulse 2s infinite;
+                animation: pulse 1.5s infinite;
               "></div>
             </div>
           `,
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
-        L.marker([currentPosition.lat, currentPosition.lng], { icon: liveIcon }).addTo(group)
+
+        const liveMarker = L.marker([currentPosition.lat, currentPosition.lng], { icon: liveIcon, zIndexOffset: 2000 })
+        liveMarker.addTo(group)
+
+        // Auto-center on boat when sailing
+        if (autoFollowBoat && mapInstanceRef.current) {
+          mapInstanceRef.current.panTo([currentPosition.lat, currentPosition.lng], { animate: true, duration: 0.5 })
+        }
       }
 
-      const allPoints: [number, number][] = [
-        [DOLNI_ZALEZLY_COORDS.lat, DOLNI_ZALEZLY_COORDS.lng],
-        ...track.map((t) => [t.lat, t.lng] as [number, number]),
-        ...entries.map((e) => [e.lat, e.lng] as [number, number]),
-      ]
-      if (allPoints.length > 0) {
-        const bounds = L.latLngBounds(allPoints)
-        mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+      if (!autoFollowBoat || !currentPosition) {
+        const allPoints: [number, number][] = [
+          [DOLNI_ZALEZLY_COORDS.lat, DOLNI_ZALEZLY_COORDS.lng],
+          ...track.map((t) => [t.lat, t.lng] as [number, number]),
+          ...entries.map((e) => [e.lat, e.lng] as [number, number]),
+        ]
+        if (allPoints.length > 0) {
+          const bounds = L.latLngBounds(allPoints)
+          mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+        }
       }
     })
-  }, [track, entries, currentPosition, selectedEntryId, onSelectEntry])
+  }, [track, entries, currentPosition, selectedEntryId, autoFollowBoat, onSelectEntry])
 
   return (
     <div className="relative w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden border border-border shadow-sm">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Layer Switcher & AIS Toggle controls */}
+      {/* Map Control Buttons */}
       <div className="absolute top-3 right-3 z-10 flex flex-col md:flex-row items-end md:items-center gap-2">
+        {/* Auto Follow Boat Button */}
+        {currentPosition && (
+          <button
+            onClick={() => setAutoFollowBoat(!autoFollowBoat)}
+            className={`px-3 py-1.5 rounded-lg border shadow-md font-sans text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              autoFollowBoat
+                ? "bg-brass text-white border-brass"
+                : "bg-background/90 text-foreground border-border hover:bg-secondary"
+            }`}
+          >
+            <Navigation className="size-3.5" />
+            <span>{autoFollowBoat ? "Sledování lodi zapnuto" : "Sledovat loď"}</span>
+          </button>
+        )}
+
         {/* Map Layer Selector */}
         <div className="bg-background/95 backdrop-blur-md border border-border shadow-md rounded-lg p-1 flex items-center gap-1 text-xs">
           <Layers className="size-3.5 text-muted-foreground ml-1.5" />
@@ -374,7 +408,7 @@ export default function BoatMap({
                 : "text-foreground hover:bg-secondary"
             }`}
           >
-            🌊 Námořní OpenSeaMap
+            🌊 Námořní
           </button>
           <button
             onClick={() => setActiveLayer("satellite")}
