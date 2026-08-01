@@ -2,7 +2,8 @@
 
 import { Trip } from "@/lib/types/logbook"
 import { Button } from "@/components/ui/button"
-import { Anchor, Compass, Play, Square, ClipboardCheck, Plus, Navigation, MapPin, Trash2, Clock, Zap } from "lucide-react"
+import { downloadGpxFile } from "@/lib/services/gpx"
+import { Anchor, Compass, Play, Square, ClipboardCheck, Plus, Navigation, MapPin, Trash2, Clock, Zap, Download, Printer } from "lucide-react"
 
 interface TripHeaderProps {
   trips: Trip[]
@@ -44,15 +45,15 @@ export function TripHeader({
   onAddEntry,
 }: TripHeaderProps) {
   return (
-    <div className="flex flex-col gap-5 p-5 md:p-6 bg-card border border-border rounded-2xl shadow-sm">
+    <div className="flex flex-col gap-4 p-4 md:p-6 bg-card border border-border rounded-2xl shadow-sm">
       {/* Top row: Trip title & Trip switcher */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 rounded-xl text-primary border border-primary/20">
+          <div className="p-3 bg-primary/10 rounded-xl text-primary border border-primary/20 shrink-0">
             <Anchor className="size-7" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 Aktivní plavba
               </span>
@@ -71,7 +72,7 @@ export function TripHeader({
               <select
                 value={activeTrip.id}
                 onChange={(e) => onSelectTrip(e.target.value)}
-                className="font-display text-2xl md:text-3xl font-semibold bg-transparent border-b border-dashed border-border focus:outline-none focus:border-primary cursor-pointer pr-2 max-w-[260px] md:max-w-md truncate"
+                className="font-display text-xl sm:text-2xl md:text-3xl font-semibold bg-transparent border-b border-dashed border-border focus:outline-none focus:border-primary cursor-pointer pr-2 max-w-[220px] sm:max-w-[280px] md:max-w-md truncate"
               >
                 {trips.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -106,88 +107,105 @@ export function TripHeader({
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Pre-trip log button */}
-          <Button variant="secondary" onClick={onOpenPreTripCheck} className="flex-1 md:flex-none">
+          <Button variant="secondary" onClick={onOpenPreTripCheck} className="flex-1 md:flex-none text-xs sm:text-sm">
             <ClipboardCheck className="size-4 text-brass" />
-            {activeTrip.preTripCheck ? "Upravit přípravu" : "Zápis před cestou"}
+            {activeTrip.preTripCheck ? "Upravit přípravu" : "Příprava"}
           </Button>
 
           {/* GPS Route recording toggle */}
           {isTracking ? (
-            <Button variant="destructive" onClick={onToggleTracking} className="flex-1 md:flex-none">
+            <Button variant="destructive" onClick={onToggleTracking} className="flex-1 md:flex-none text-xs sm:text-sm">
               <Square className="size-4 fill-current animate-pulse" />
-              Zastavit snímání GPS
+              Stop GPS
             </Button>
           ) : (
-            <Button onClick={onToggleTracking} className="flex-1 md:flex-none">
+            <Button onClick={onToggleTracking} className="flex-1 md:flex-none text-xs sm:text-sm">
               <Play className="size-4 fill-current" />
-              Snímat trasu (GPS)
+              Snímat GPS
             </Button>
           )}
 
           {/* Add entry button */}
-          <Button onClick={onAddEntry} className="w-full md:w-auto bg-brass text-white hover:bg-brass/90">
+          <Button onClick={onAddEntry} className="w-full md:w-auto bg-brass text-white hover:bg-brass/90 text-xs sm:text-sm">
             <MapPin className="size-4" />
             Přidat zastávku / fotku
           </Button>
+
+          {/* Export GPX & Print buttons */}
+          <button
+            onClick={() => downloadGpxFile(activeTrip)}
+            title="Stáhnout trasu ve formátu GPX (pro navigace)"
+            className="p-2 rounded-lg border border-border bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Download className="size-4" />
+          </button>
+
+          <button
+            onClick={() => window.print()}
+            title="Vytisknout / Uložit deník jako PDF"
+            className="p-2 rounded-lg border border-border bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Printer className="size-4" />
+          </button>
         </div>
       </div>
 
-      {/* Navigation Stats & Details Bar (Strava/Run-Style Navigation HUD) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-border/60">
-        <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
-          <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
-            <Navigation className="size-3.5 text-primary" /> Ujetá vzdálenost
+      {/* Navigation Stats & Details Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 pt-3 border-t border-border/60">
+        <div className="p-2.5 sm:p-3 bg-secondary/50 rounded-xl border border-border/50">
+          <div className="text-[10px] sm:text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
+            <Navigation className="size-3.5 text-primary" /> Vzdálenost
           </div>
-          <div className="font-mono text-lg font-bold text-foreground mt-0.5">
+          <div className="font-mono text-base sm:text-lg font-bold text-foreground mt-0.5">
             {activeTrip.totalDistanceKm.toFixed(1)} km{" "}
-            <span className="text-xs font-normal text-muted-foreground">
+            <span className="text-[11px] font-normal text-muted-foreground">
               ({(activeTrip.totalDistanceKm / 1.852).toFixed(1)} NM)
             </span>
           </div>
         </div>
 
-        <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
-          <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
-            <Compass className="size-3.5 text-brass" /> Rychlost plavby
+        <div className="p-2.5 sm:p-3 bg-secondary/50 rounded-xl border border-border/50">
+          <div className="text-[10px] sm:text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
+            <Compass className="size-3.5 text-brass" /> Rychlost
           </div>
-          <div className="font-mono text-lg font-bold text-foreground mt-0.5">
+          <div className="font-mono text-base sm:text-lg font-bold text-foreground mt-0.5">
             {currentSpeedKnots ? `${currentSpeedKnots} kts` : "0.0 kts"}{" "}
             {maxSpeedKnots > 0 && (
-              <span className="text-xs font-normal text-muted-foreground">
-                (max {maxSpeedKnots} kts)
+              <span className="text-[11px] font-normal text-muted-foreground">
+                (max {maxSpeedKnots})
               </span>
             )}
           </div>
         </div>
 
-        <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
-          <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
+        <div className="p-2.5 sm:p-3 bg-secondary/50 rounded-xl border border-border/50">
+          <div className="text-[10px] sm:text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
             <Clock className="size-3.5 text-primary" /> Doba plavby
           </div>
-          <div className="font-mono text-lg font-bold text-foreground mt-0.5">
+          <div className="font-mono text-base sm:text-lg font-bold text-foreground mt-0.5">
             {isTracking ? formatTimer(elapsedSeconds) : "--:--"}
           </div>
         </div>
 
-        <div className="p-3 bg-secondary/50 rounded-xl border border-border/50">
-          <div className="text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
+        <div className="p-2.5 sm:p-3 bg-secondary/50 rounded-xl border border-border/50">
+          <div className="text-[10px] sm:text-[11px] font-mono text-muted-foreground uppercase flex items-center gap-1.5">
             <Zap className="size-3.5 text-success" /> GPS Snímání
           </div>
-          <div className="font-mono text-xs font-semibold mt-1.5 flex items-center gap-2">
+          <div className="font-mono text-[11px] sm:text-xs font-semibold mt-1 flex items-center gap-1.5">
             {isTracking ? (
               <>
-                <span className="relative flex size-2.5">
+                <span className="relative flex size-2">
                   <span className="animate-ping absolute inline-flex size-full rounded-full bg-success opacity-75"></span>
-                  <span className="relative inline-flex size-2.5 rounded-full bg-success"></span>
+                  <span className="relative inline-flex size-2 rounded-full bg-success"></span>
                 </span>
-                <span className="text-success font-medium">Živé trasování plavby</span>
+                <span className="text-success font-medium">Živé trasování</span>
               </>
             ) : (
               <>
-                <span className="size-2.5 rounded-full bg-muted-foreground/50"></span>
-                <span className="text-muted-foreground font-normal">Snímání vypnuto</span>
+                <span className="size-2 rounded-full bg-muted-foreground/50"></span>
+                <span className="text-muted-foreground font-normal">Vypnuto</span>
               </>
             )}
           </div>
