@@ -51,7 +51,6 @@ export default function BoatMap({
       const centerLat = DOLNI_ZALEZLY_COORDS.lat
       const centerLng = DOLNI_ZALEZLY_COORDS.lng
 
-      // High-performance canvas renderer for ultra-smooth map rendering
       const map = L.map(mapContainerRef.current!, {
         center: [centerLat, centerLng],
         zoom: 12,
@@ -201,7 +200,7 @@ export default function BoatMap({
     }
   }, [showAis])
 
-  // Render Log Entries & Smooth Dynamic Running/Sailing Track Line
+  // Render Log Entries & Smooth Dynamic Track Line
   useEffect(() => {
     if (!mapInstanceRef.current || !layerGroupRef.current) return
 
@@ -250,18 +249,16 @@ export default function BoatMap({
       `)
       homeMarker.addTo(group)
 
-      // Strava/Run-Style Glowing Dynamic Route Polyline
+      // Strava/Run-Style Dynamic Polyline
       if (track.length > 1) {
         const polylineCoords = track.map((p) => [p.lat, p.lng] as [number, number])
 
-        // Outer glow line
         L.polyline(polylineCoords, {
           color: "#0B6E78",
           weight: 8,
           opacity: 0.35,
         }).addTo(group)
 
-        // Core solid line
         L.polyline(polylineCoords, {
           color: "#0B6E78",
           weight: 4,
@@ -318,7 +315,7 @@ export default function BoatMap({
         marker.addTo(group)
       })
 
-      // Live Boat / Current GPS Marker with animated pulse & heading arrow
+      // Live Boat Current GPS Marker
       if (currentPosition) {
         const liveIcon = L.divIcon({
           className: "live-gps-marker",
@@ -356,7 +353,6 @@ export default function BoatMap({
         const liveMarker = L.marker([currentPosition.lat, currentPosition.lng], { icon: liveIcon, zIndexOffset: 2000 })
         liveMarker.addTo(group)
 
-        // Auto-center on boat when sailing
         if (autoFollowBoat && mapInstanceRef.current) {
           mapInstanceRef.current.panTo([currentPosition.lat, currentPosition.lng], { animate: true, duration: 0.5 })
         }
@@ -370,39 +366,53 @@ export default function BoatMap({
         ]
         if (allPoints.length > 0) {
           const bounds = L.latLngBounds(allPoints)
-          mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+          mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
         }
       }
     })
   }, [track, entries, currentPosition, selectedEntryId, autoFollowBoat, onSelectEntry])
 
   return (
-    <div className="relative w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden border border-border shadow-sm">
+    <div className="relative w-full h-[360px] sm:h-[420px] md:h-[500px] rounded-2xl overflow-hidden border border-border shadow-sm">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Map Control Buttons */}
-      <div className="absolute top-3 right-3 z-10 flex flex-col md:flex-row items-end md:items-center gap-2">
-        {/* Auto Follow Boat Button */}
-        {currentPosition && (
+      {/* Map Control Buttons — Responsive Stacking for Small Mobile Screens */}
+      <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1.5 max-w-[90%]">
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {/* Auto Follow Boat Button */}
+          {currentPosition && (
+            <button
+              onClick={() => setAutoFollowBoat(!autoFollowBoat)}
+              className={`px-2.5 py-1 rounded-lg border shadow-md font-sans text-[11px] font-semibold flex items-center gap-1 transition-all ${
+                autoFollowBoat
+                  ? "bg-brass text-white border-brass"
+                  : "bg-background/95 text-foreground border-border hover:bg-secondary"
+              }`}
+            >
+              <Navigation className="size-3" />
+              <span>{autoFollowBoat ? "Sledování zapnuto" : "Sledovat loď"}</span>
+            </button>
+          )}
+
+          {/* AIS Toggle Button */}
           <button
-            onClick={() => setAutoFollowBoat(!autoFollowBoat)}
-            className={`px-3 py-1.5 rounded-lg border shadow-md font-sans text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              autoFollowBoat
-                ? "bg-brass text-white border-brass"
-                : "bg-background/90 text-foreground border-border hover:bg-secondary"
+            onClick={() => setShowAis(!showAis)}
+            className={`px-2.5 py-1 rounded-lg border shadow-md font-sans text-[11px] font-semibold flex items-center gap-1 transition-all ${
+              showAis
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background/95 text-foreground border-border hover:bg-secondary"
             }`}
           >
-            <Navigation className="size-3.5" />
-            <span>{autoFollowBoat ? "Sledování lodi zapnuto" : "Sledovat loď"}</span>
+            <Ship className="size-3.5" />
+            <span>{showAis ? "Lodě (AIS ON)" : "Lodě (OFF)"}</span>
           </button>
-        )}
+        </div>
 
         {/* Map Layer Selector */}
-        <div className="bg-background/95 backdrop-blur-md border border-border shadow-md rounded-lg p-1 flex items-center gap-1 text-xs">
-          <Layers className="size-3.5 text-muted-foreground ml-1.5" />
+        <div className="bg-background/95 backdrop-blur-md border border-border shadow-md rounded-lg p-0.5 flex items-center gap-0.5 text-[11px]">
           <button
             onClick={() => setActiveLayer("seamap")}
-            className={`px-2 py-1 rounded font-medium transition-colors ${
+            className={`px-2 py-0.5 rounded font-medium transition-colors ${
               activeLayer === "seamap"
                 ? "bg-primary text-white"
                 : "text-foreground hover:bg-secondary"
@@ -412,17 +422,17 @@ export default function BoatMap({
           </button>
           <button
             onClick={() => setActiveLayer("satellite")}
-            className={`px-2 py-1 rounded font-medium transition-colors ${
+            className={`px-2 py-0.5 rounded font-medium transition-colors ${
               activeLayer === "satellite"
                 ? "bg-primary text-white"
                 : "text-foreground hover:bg-secondary"
             }`}
           >
-            🛰️ Satelitní
+            🛰️ Satelit
           </button>
           <button
             onClick={() => setActiveLayer("osm")}
-            className={`px-2 py-1 rounded font-medium transition-colors ${
+            className={`px-2 py-0.5 rounded font-medium transition-colors ${
               activeLayer === "osm"
                 ? "bg-primary text-white"
                 : "text-foreground hover:bg-secondary"
@@ -431,28 +441,15 @@ export default function BoatMap({
             🗺️ Základní
           </button>
         </div>
-
-        {/* AIS Toggle Button */}
-        <button
-          onClick={() => setShowAis(!showAis)}
-          className={`px-3 py-1.5 rounded-lg border shadow-md font-sans text-xs font-semibold flex items-center gap-1.5 transition-all ${
-            showAis
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background/90 text-foreground border-border hover:bg-secondary"
-          }`}
-        >
-          <Ship className="size-4" />
-          <span>{showAis ? "Lodě (AIS ON)" : "Zobrazit lodě"}</span>
-        </button>
       </div>
 
-      <div className="absolute bottom-2 left-2 z-10 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded border border-border text-[11px] font-mono text-muted-foreground flex items-center gap-2">
+      <div className="absolute bottom-2 left-2 z-10 bg-background/90 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-border text-[10px] font-mono text-muted-foreground flex items-center gap-1.5">
         <span className="inline-block size-2 rounded-full bg-primary animate-pulse" />
         {activeLayer === "seamap"
-          ? "OpenSeaMap (Plavební znaky, bóje, přístavy)"
+          ? "OpenSeaMap (Bóje, značky)"
           : activeLayer === "satellite"
-          ? "Satelitní mapa Labe"
-          : "Základní vodní dráha"}
+          ? "Satelitní Labe"
+          : "Základní vodní mapa"}
       </div>
     </div>
   )

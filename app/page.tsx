@@ -23,7 +23,7 @@ import { Anchor, Compass, Info, CheckCircle2, MapPin, Play, Square, ClipboardChe
 const BoatMap = dynamic(() => import("@/components/map/boat-map"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[380px] md:h-[500px] rounded-xl bg-secondary/40 animate-pulse flex flex-col items-center justify-center border border-border text-muted-foreground gap-2">
+    <div className="w-full h-[360px] sm:h-[420px] md:h-[500px] rounded-2xl bg-secondary/40 animate-pulse flex flex-col items-center justify-center border border-border text-muted-foreground gap-2">
       <Anchor className="size-8 animate-bounce text-primary" />
       <span className="font-mono text-xs">Načítám lodní mapu a plavební značení...</span>
     </div>
@@ -179,17 +179,17 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-svh max-w-[1120px] mx-auto px-4 py-4 md:py-10 space-y-5">
+    <main className="min-h-svh max-w-[1120px] mx-auto px-3 sm:px-4 py-3 sm:py-6 md:py-10 space-y-4 md:space-y-6 pb-24 md:pb-10">
       {/* Top App Header */}
       <header className="flex items-center justify-between border-b border-border pb-3">
-        <div className="flex items-center gap-2.5">
-          <Compass className="size-7 md:size-8 text-primary" strokeWidth={1.75} />
+        <div className="flex items-center gap-2">
+          <Compass className="size-7 md:size-8 text-primary shrink-0" strokeWidth={1.75} />
           <div>
-            <h1 className="font-display text-xl md:text-3xl font-bold tracking-tight text-foreground">
+            <h1 className="font-display text-lg sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
               Rodinný lodní deník
             </h1>
-            <p className="text-[11px] font-mono text-muted-foreground">
-              Plavební deník s živým trasováním GPS pro rodiče
+            <p className="text-[10px] sm:text-xs font-mono text-muted-foreground">
+              Plavební deník s GPS trasováním pro rodiče
             </p>
           </div>
         </div>
@@ -197,7 +197,7 @@ export default function Home() {
         {/* Add to Home Screen Button */}
         <button
           onClick={() => setShowInstallGuide(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium transition-colors shrink-0"
         >
           <Smartphone className="size-4 text-primary" />
           <span className="hidden sm:inline">Dát na plochu mobilu</span>
@@ -245,7 +245,7 @@ export default function Home() {
                 Příprava: {activeTrip.preTripCheck.departureHarbour} &rarr;{" "}
                 {activeTrip.preTripCheck.destinationHarbour || "Cíl v itineráři"}
               </span>
-              <div className="text-muted-foreground mt-0.5">
+              <div className="text-muted-foreground mt-0.5 text-[11px] sm:text-xs">
                 Kapitán: <strong className="text-foreground">{activeTrip.preTripCheck.captain}</strong> ·
                 Počasí: {activeTrip.preTripCheck.weatherForecast} · Palivo: {activeTrip.preTripCheck.fuelLevel}
               </div>
@@ -262,8 +262,8 @@ export default function Home() {
 
       {/* Interactive Nautical Map */}
       <section className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-          <span>Mapa plavby & plavební dráhy (Klepením přidáte zastávku)</span>
+        <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono text-muted-foreground">
+          <span>Mapa plavby (Klepením přidáte zastávku)</span>
           <span>{activeTrip.entries.length} zastávek</span>
         </div>
         <BoatMap
@@ -288,11 +288,11 @@ export default function Home() {
         />
       </section>
 
-      {/* MOBILE STICKY BOTTOM DOCK */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border p-3 shadow-lg flex items-center justify-around gap-2">
+      {/* MOBILE STICKY BOTTOM DOCK (S ošetřením pro iPhone spodní lištu env(safe-area-inset-bottom)) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border px-3 py-2.5 shadow-2xl flex items-center justify-around gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button
           onClick={() => setShowPreTripModal(true)}
-          className="flex flex-col items-center gap-1 text-[11px] font-medium text-foreground py-1 px-2 rounded hover:bg-secondary"
+          className="flex flex-col items-center gap-1 text-[10px] font-semibold text-foreground py-1 px-2.5 rounded-lg active:bg-secondary"
         >
           <ClipboardCheck className="size-5 text-brass" />
           <span>Příprava</span>
@@ -303,15 +303,15 @@ export default function Home() {
             setManualClickCoords(null)
             setShowAddEntryModal(true)
           }}
-          className="flex items-center justify-center gap-2 bg-brass text-white font-semibold py-2.5 px-4 rounded-full shadow-md text-xs active:scale-95 transition-transform"
+          className="flex items-center justify-center gap-1.5 bg-brass text-white font-semibold py-2.5 px-4 rounded-full shadow-lg text-xs active:scale-95 transition-transform"
         >
           <MapPin className="size-4" />
-          <span>Přidat fotku / zápis</span>
+          <span>+ Záznam / Fotka</span>
         </button>
 
         <button
           onClick={isTracking ? stopTracking : startTracking}
-          className={`flex flex-col items-center gap-1 text-[11px] font-medium py-1 px-2 rounded ${
+          className={`flex flex-col items-center gap-1 text-[10px] font-semibold py-1 px-2.5 rounded-lg active:bg-secondary ${
             isTracking ? "text-destructive" : "text-primary"
           }`}
         >
