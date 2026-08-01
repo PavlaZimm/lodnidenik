@@ -34,6 +34,17 @@ export const metadata: Metadata = {
   title: "Rodinný lodní deník",
   description: "Rodinný deník cest z dovolených — mapa s trasou, fotky a zápisky ze zastávek.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico", type: "image/x-icon" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
