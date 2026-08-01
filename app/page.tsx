@@ -17,6 +17,7 @@ import { PreTripForm } from "@/components/logbook/pre-trip-form"
 import { AddEntryDialog } from "@/components/logbook/add-entry-dialog"
 import { EditEntryDialog } from "@/components/logbook/edit-entry-dialog"
 import { InstallGuideDialog } from "@/components/logbook/install-guide-dialog"
+import { NauticalWeatherWidget } from "@/components/logbook/nautical-weather-widget"
 import { PhotoLightbox } from "@/components/logbook/photo-lightbox"
 import { Anchor, Compass, Info, CheckCircle2, MapPin, Play, Square, ClipboardCheck, Smartphone } from "lucide-react"
 
@@ -235,6 +236,9 @@ export default function Home() {
         }}
       />
 
+      {/* Nautical Weather, Sunset & River Water Level Widget */}
+      <NauticalWeatherWidget />
+
       {/* Pre-Trip Badge */}
       {activeTrip.preTripCheck && (
         <div className="p-3.5 bg-secondary/30 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs">
@@ -288,7 +292,7 @@ export default function Home() {
         />
       </section>
 
-      {/* MOBILE STICKY BOTTOM DOCK (S ošetřením pro iPhone spodní lištu env(safe-area-inset-bottom)) */}
+      {/* MOBILE STICKY BOTTOM DOCK */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border px-3 py-2.5 shadow-2xl flex items-center justify-around gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button
           onClick={() => setShowPreTripModal(true)}
